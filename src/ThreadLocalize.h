@@ -19,8 +19,12 @@
 #include "obvision/reconstruct/grid/TsdGrid.h"
 #include "obvision/reconstruct/grid/RayCastPolar2D.h"
 #include "obvision/registration/icp/icp_def.h"
+#include "obvision/registration/ransacMatching/RandomNormalMatching.h"
 
 #include <string>
+#include <csignal>
+// enable trace function
+//#define TRACE
 
 namespace ohm_tsd_slam
 {
@@ -39,10 +43,11 @@ const double TRNS_MIN = 0.05;              //Minimal values for the pose change.
 const double ROT_MIN = 0.03;               //greater than than one of these values
 const double DIST_FILT_MIN = 0.1;
 const double DIST_FILT_MAX = 1.0;
-const int RANSAC_TRIALS =  50;
+const int RANSAC_TRIALS =  30;
 const double RANSAC_EPS_THRESH = 0.15;
-const int RANSAC_CTRL_SET_SIZE = 180;
+const int RANSAC_CTRL_SET_SIZE = 90;
 const double RANSAC_PHI_MAX = 30.0;
+
 }
 
 class ThreadLocalize: public ThreadSLAM
@@ -181,6 +186,8 @@ private:
    */
   void reduceResolution(bool* const maskIn, const obvious::Matrix* matIn, bool* const maskOut, obvious::Matrix* matOut,
       unsigned int pointsIn, unsigned int pointsOut, unsigned int reductionFactor);
+
+  obvious::RandomNormalMatching* ransac;
 
 
   /**
@@ -380,6 +387,7 @@ private:
    * Scan passed in clockwise rotation (mathematically negative increment)
    */
   bool _reverseScan;
+
 };
 
 

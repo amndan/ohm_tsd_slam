@@ -118,17 +118,30 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
   _tf.child_frame_id_          = _nameSpace + tfChildFrameId;
 
   _reverseScan = false;
+
+  ransac = new obvious::RandomNormalMatching(); // use default values from obviously; so all relevant parameters are in one file
+
+#ifdef TRACE
+	ransac->activateTrace();
+#endif
+
 }
 
-ThreadLocalize::~ThreadLocalize()
-{
-  delete _sensor;
-  for(std::deque<sensor_msgs::LaserScan*>::iterator iter = _laserData.begin(); iter < _laserData.end(); iter++)
-    delete *iter;
-  _stayActive = false;
-  _thread->join();
-  _laserData.clear();
+ThreadLocalize::~ThreadLocalize() {
+	ROS_INFO_STREAM("Dekonstruktor ThreadLocalize");
+#ifdef TRACE
+	ransac->serializeTrace("/tmp/trace/");
+#endif
+
+	delete _sensor;
+	for (std::deque<sensor_msgs::LaserScan*>::iterator iter =
+			_laserData.begin(); iter < _laserData.end(); iter++)
+		delete *iter;
+	_stayActive = false;
+	_thread->join();
+	_laserData.clear();
 }
+
 
 void ThreadLocalize::laserCallBack(const sensor_msgs::LaserScan& scan)
 {
@@ -337,9 +350,26 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
 //    reduceResolution(_maskM, M, maskMRed, &Mreduced, measurementSize, reducedSize, factor);
 
     //std::cout << __PRETTY_FUNCTION__ << " trials " << _ranTrials << " epsthresh " << _ranEpsThresh << " sizectrlset " << _ranSizeCtrlSet << std::endl;
-    obvious::RandomNormalMatching ransac(_ranTrials, _ranEpsThresh, _ranSizeCtrlSet);
+
     //if(factor == 1)
-    obvious::Matrix T = ransac.match(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    obvious::Matrix T = ransac->match2(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    //obvious::Matrix T2 = ransac->match(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+
+#ifdef TRACE
+    long int a = ros::Time::now().toSec();
+    std::stringstream ss;
+    ss << "/tmp/trace/" << a << "/";
+    std::string filename = ss.str();
+
+    ransac->serializeTrace(filename.c_str());
+#endif
+
+//    ROS_INFO_STREAM("T; T2; diff \t||"
+//    		<< T(0,2) << " ; " << T(1,2) << " \t|| "
+//			<< T2(0,2) << " ; " << T2(1,2) << "\t|| "
+//			<< T(0,2) - T2(0,2) << " ; " << T(1,2) - T2(1,2));
+
+
     //    else
     //    std::cout << __PRETTY_FUNCTION__ << " here?" << std::endl;
     //    obvious::Matrix T = ransac.match(&Mreduced, maskMRed, N, &Sreduced, maskSRed, obvious::deg2rad(45.0),
@@ -352,6 +382,8 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
     T44(1, 1) = T(1, 1);
     T44(1, 3) = T(1, 2);
   }
+
+
   _icp->reset();
   obvious::Matrix P = sensor->getTransformation();
   _filterBounds->setPose(&P);
@@ -363,6 +395,8 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
   unsigned int it = 0;
   _icp->iterate(&rms, &pairs, &it, &T44);
   obvious::Matrix T = _icp->getFinalTransformation();
+
+
   return T;
 }
 

@@ -97,7 +97,8 @@ SlamNode::SlamNode(void)
 
 SlamNode::~SlamNode()
 {
-  //stop all localization threads
+	printf("dekonstruktor slam node");
+	//stop all localization threads
   for(std::vector<ThreadLocalize*>::iterator iter = _localizers.begin(); iter < _localizers.end(); iter++)
   {
     (*iter)->terminateThread();
