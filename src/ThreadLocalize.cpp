@@ -94,6 +94,47 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
   _scene        = NULL;
   _maskS        = NULL;
 
+  /** experimental probability model parameters **/
+
+	int 			trials 			    ;
+	double 			epsThresh 		    ;
+	int 			sizeControlSet 	    ;
+	double 			zhit 			    ;
+	double 			zphi 			    ;
+	double 			zshort 			    ;
+	double 			zmax 			    ;
+	double 			zrand 			    ;
+	double 			percentagePointsInC ;
+	double 			rangemax 		    ;
+	double 			sigphi 			    ;
+	double 			sighit 			    ;
+	double 			lamshort 		    ;
+	double 			maxAngleDiff 	    ;
+	double 			maxAnglePenalty     ;
+
+
+	prvNh.param<int>("trials",trials,100);
+	prvNh.param<double>("epsThresh",epsThresh,0.15);
+	prvNh.param<int>("sizeControlSet",sizeControlSet,140);
+	prvNh.param<double>("zhit",zhit,0.45);
+	prvNh.param<double>("zphi",zphi,0);
+	prvNh.param<double>("zshort",zshort,0.25);
+	prvNh.param<double>("zmax",zmax,0.05);
+	prvNh.param<double>("zrand",zrand,0.25);
+	prvNh.param<double>("percentagePointsInC",percentagePointsInC,0.9);
+	prvNh.param<double>("rangemax",rangemax,20);
+	prvNh.param<double>("sigphi",sigphi,M_PI / 180.0 * 3);
+	prvNh.param<double>("sighit",sighit,0.2);
+	prvNh.param<double>("lamshort",lamshort,0.08);
+	prvNh.param<double>("maxAngleDiff",maxAngleDiff,3.0);
+	prvNh.param<double>("maxAnglePenalty",maxAnglePenalty,0.5);
+
+	ransac = new obvious::RandomNormalMatching(trials, epsThresh,
+			sizeControlSet, zhit, zphi, zshort, zmax, zrand,
+			percentagePointsInC, rangemax, sigphi, sighit, lamshort,
+			maxAngleDiff, maxAnglePenalty);
+
+
   /** Initialize member modules **/
   _lastPose         = new obvious::Matrix(3, 3);
   _rayCaster        = new obvious::RayCastPolar2D();
@@ -119,7 +160,7 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
 
   _reverseScan = false;
 
-  ransac = new obvious::RandomNormalMatching(); // use default values from obviously; so all relevant parameters are in one file
+
 
 #ifdef TRACE
 	ransac->activateTrace();
