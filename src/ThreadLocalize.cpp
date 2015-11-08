@@ -134,6 +134,11 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
 			percentagePointsInC, rangemax, sigphi, sighit, lamshort,
 			maxAngleDiff, maxAnglePenalty);
 
+	ransac2 = new obvious::RandomNormalMatching(trials, epsThresh,
+			sizeControlSet, zhit, zphi, zshort, zmax, zrand,
+			percentagePointsInC, rangemax, sigphi, sighit, lamshort,
+			maxAngleDiff, maxAnglePenalty);
+
 
   /** Initialize member modules **/
   _lastPose         = new obvious::Matrix(3, 3);
@@ -164,15 +169,13 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
 
 #ifdef TRACE
 	ransac->activateTrace();
+	ransac2->activateTrace();
 #endif
 
 }
 
 ThreadLocalize::~ThreadLocalize() {
 	ROS_INFO_STREAM("Dekonstruktor ThreadLocalize");
-#ifdef TRACE
-	ransac->serializeTrace("/tmp/trace/");
-#endif
 
 	delete _sensor;
 	for (std::deque<sensor_msgs::LaserScan*>::iterator iter =
@@ -393,17 +396,29 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
     //std::cout << __PRETTY_FUNCTION__ << " trials " << _ranTrials << " epsthresh " << _ranEpsThresh << " sizectrlset " << _ranSizeCtrlSet << std::endl;
 
     //if(factor == 1)
-    obvious::Matrix T = ransac->match2(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
-    //obvious::Matrix T2 = ransac->match(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    obvious::Matrix T = ransac2->match2(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    obvious::Matrix T2 = ransac->match(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    loopCounter ++;
+
+    double diff = sqrt(pow(T(0,2) - T2(0,2),2) + pow(T(1,2) - T2(1,2),2));
 
 #ifdef TRACE
-    long int a = ros::Time::now().toSec();
-    std::stringstream ss;
-    ss << "/tmp/trace/" << a << "/";
-    std::string filename = ss.str();
+    if (diff > 0.3){
+    	ROS_INFO_STREAM("Diff: "<<diff);
+		long int a = ros::Time::now().toSec();
+		std::stringstream ss, ss2;
+		ss << "/tmp/trace/" << loopCounter << "_" << a << "_" << diff << "_match" << "/";
+		std::string filename = ss.str();
 
-    ransac->serializeTrace(filename.c_str());
+		ransac->serializeTrace(filename.c_str());
+
+		ss2 << "/tmp/trace/" << loopCounter << "_" << a << "_" << diff << "_match2" << "/";
+		filename = ss2.str();
+
+		ransac2->serializeTrace(filename.c_str());
+    }
 #endif
+
 
 //    ROS_INFO_STREAM("T; T2; diff \t||"
 //    		<< T(0,2) << " ; " << T(1,2) << " \t|| "

@@ -61,7 +61,7 @@
 	 <param type = "double" name = "zrand"  		value = "0.25"/>
 	 <param type = "double" name = "percentagePointsInC" 	value = "0.9"/>
 	 <param type = "double" name = "rangemax"  		value = "20"/>
-	 <param type = "double" name = "sigphi"  		value = "0.052"/>
+	 <param type = "double" name = "sigphi"  		value = "0.052"/> <!-- 3 degree -->
 	 <param type = "double" name = "sighit"  		value = "0.2"/>
 	 <param type = "double" name = "lamshort"  		value = "0.08"/>
 	 <param type = "double" name = "maxAngleDiff"  		value = "3.0"/>

@@ -14,6 +14,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_broadcaster.h>
+#include <cmath>
 
 #include "obvision/reconstruct/grid/SensorPolar2D.h"
 #include "obvision/reconstruct/grid/TsdGrid.h"
@@ -24,7 +25,7 @@
 #include <string>
 #include <csignal>
 // enable trace function
-//#define TRACE
+#define TRACE
 
 namespace ohm_tsd_slam
 {
@@ -188,7 +189,8 @@ private:
       unsigned int pointsIn, unsigned int pointsOut, unsigned int reductionFactor);
 
   obvious::RandomNormalMatching* ransac;
-
+  obvious::RandomNormalMatching* ransac2;
+  long int loopCounter;
 
   /**
    * Pointer to main NodeHandle
