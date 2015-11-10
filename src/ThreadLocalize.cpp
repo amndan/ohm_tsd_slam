@@ -396,8 +396,10 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
     //std::cout << __PRETTY_FUNCTION__ << " trials " << _ranTrials << " epsthresh " << _ranEpsThresh << " sizectrlset " << _ranSizeCtrlSet << std::endl;
 
     //if(factor == 1)
-    obvious::Matrix T = ransac2->match2(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
-    obvious::Matrix T2 = ransac->match(M, _maskM, N, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+
+	  // DONT FORGET NORMALS !!!!!!!!!!!!!!!!!
+    obvious::Matrix T = ransac2->match2(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    obvious::Matrix T2 = ransac->match(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
     loopCounter ++;
 
     double diff = sqrt(pow(T(0,2) - T2(0,2),2) + pow(T(1,2) - T2(1,2),2));
@@ -416,6 +418,20 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
 		filename = ss2.str();
 
 		ransac2->serializeTrace(filename.c_str());
+
+		// write on file
+
+		filename = filename + "rawData.dat";
+		ofstream file(filename.c_str());
+
+		// mx my mm sx sy sm
+		for (unsigned int i = 0; i < M->getRows(); i++){
+			file << (*M)(i,0) << ";" << (*M)(i,1) << ";" << _maskM[i] << ";" << (*S)(i,0) << ";" << (*S)(i,1) << ";" << _maskS[i] << "\n";
+		}
+
+		file.close();
+
+		//~ write on file
     }
 #endif
 
