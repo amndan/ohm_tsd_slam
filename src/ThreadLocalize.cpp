@@ -26,27 +26,18 @@
 namespace ohm_tsd_slam
 {
 
-ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ros::NodeHandle* nh, std::string nameSpace,
-    const double xOffset, const double yOffset):
-                    ThreadSLAM(*grid),
-                    _nh(nh),
-                    _mapper(*mapper),
-                    _sensor(NULL),
-                    _initialized(false),
-                    _gridWidth(grid->getCellsX() * grid->getCellSize()),
-                    _gridHeight(grid->getCellsY() * grid->getCellSize()),
-                    _gridOffSetX(-1.0 * (grid->getCellsX() * grid->getCellSize() * 0.5 + xOffset)),
-                    _gridOffSetY(-1.0 * (grid->getCellsY()* grid->getCellSize() * 0.5 + yOffset)),
-                    _xOffset(xOffset),
-                    _yOffset(yOffset),
-                    _nameSpace(nameSpace)
+ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ros::NodeHandle* nh, std::string nameSpace, const double xOffset, const double yOffset) :
+    ThreadSLAM(*grid), _nh(nh), _mapper(*mapper), _sensor(NULL), _initialized(false), _gridWidth(grid->getCellsX()
+        * grid->getCellSize()), _gridHeight(grid->getCellsY() * grid->getCellSize()), _gridOffSetX(-1.0
+        * (grid->getCellsX() * grid->getCellSize() * 0.5 + xOffset)), _gridOffSetY(-1.0
+        * (grid->getCellsY() * grid->getCellSize() * 0.5 + yOffset)), _xOffset(xOffset), _yOffset(yOffset), _nameSpace(nameSpace)
 {
   ros::NodeHandle prvNh("~");
 
   /*** Read parameters from ros parameter server. Use namespace if provided ***/
   _nameSpace = nameSpace;
   std::string::iterator it = _nameSpace.end() - 1;
-  if (*it != '/' && _nameSpace.size()>0)
+  if(*it != '/' && _nameSpace.size() > 0)
     _nameSpace += "/";
 
   //pose
@@ -87,66 +78,62 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
   prvNh.param<int>(_nameSpace + "registration_mode", iVar, ICP);
   _regMode = static_cast<EnumRegModes>(iVar);
 
-  _modelCoords  = NULL;
+  _modelCoords = NULL;
   _modelNormals = NULL;
-  _maskM        = NULL;
-  _rayCaster    = NULL;
-  _scene        = NULL;
-  _maskS        = NULL;
+  _maskM = NULL;
+  _rayCaster = NULL;
+  _scene = NULL;
+  _maskS = NULL;
+  _S_last = NULL;
+  _maskS_last = NULL;
 
   /** experimental probability model parameters **/
 
-	int 			trials 			    ;
-	double 			epsThresh 		    ;
-	int 			sizeControlSet 	    ;
-	double 			zhit 			    ;
-	double 			zphi 			    ;
-	double 			zshort 			    ;
-	double 			zmax 			    ;
-	double 			zrand 			    ;
-	double 			percentagePointsInC ;
-	double 			rangemax 		    ;
-	double 			sigphi 			    ;
-	double 			sighit 			    ;
-	double 			lamshort 		    ;
-	double 			maxAngleDiff 	    ;
-	double 			maxAnglePenalty     ;
+  int trials;
+  double epsThresh;
+  int sizeControlSet;
+  double zhit;
+  double zphi;
+  double zshort;
+  double zmax;
+  double zrand;
+  double percentagePointsInC;
+  double rangemax;
+  double sigphi;
+  double sighit;
+  double lamshort;
+  double maxAngleDiff;
+  double maxAnglePenalty;
 
+  prvNh.param<int>("trials", trials, 100);
+  prvNh.param<double>("epsThresh", epsThresh, 0.15);
+  prvNh.param<int>("sizeControlSet", sizeControlSet, 140);
+  prvNh.param<double>("zhit", zhit, 0.45);
+  prvNh.param<double>("zphi", zphi, 0);
+  prvNh.param<double>("zshort", zshort, 0.25);
+  prvNh.param<double>("zmax", zmax, 0.05);
+  prvNh.param<double>("zrand", zrand, 0.25);
+  prvNh.param<double>("percentagePointsInC", percentagePointsInC, 0.9);
+  prvNh.param<double>("rangemax", rangemax, 20);
+  prvNh.param<double>("sigphi", sigphi, M_PI / 180.0 * 3);
+  prvNh.param<double>("sighit", sighit, 0.2);
+  prvNh.param<double>("lamshort", lamshort, 0.08);
+  prvNh.param<double>("maxAngleDiff", maxAngleDiff, 3.0);
+  prvNh.param<double>("maxAnglePenalty", maxAnglePenalty, 0.5);
 
-	prvNh.param<int>("trials",trials,100);
-	prvNh.param<double>("epsThresh",epsThresh,0.15);
-	prvNh.param<int>("sizeControlSet",sizeControlSet,140);
-	prvNh.param<double>("zhit",zhit,0.45);
-	prvNh.param<double>("zphi",zphi,0);
-	prvNh.param<double>("zshort",zshort,0.25);
-	prvNh.param<double>("zmax",zmax,0.05);
-	prvNh.param<double>("zrand",zrand,0.25);
-	prvNh.param<double>("percentagePointsInC",percentagePointsInC,0.9);
-	prvNh.param<double>("rangemax",rangemax,20);
-	prvNh.param<double>("sigphi",sigphi,M_PI / 180.0 * 3);
-	prvNh.param<double>("sighit",sighit,0.2);
-	prvNh.param<double>("lamshort",lamshort,0.08);
-	prvNh.param<double>("maxAngleDiff",maxAngleDiff,3.0);
-	prvNh.param<double>("maxAnglePenalty",maxAnglePenalty,0.5);
+  prvNh.param<bool>("use_last_scan", _use_last_scan, false);
 
-	ransac = new obvious::RandomNormalMatching(trials, epsThresh,
-			sizeControlSet, zhit, zphi, zshort, zmax, zrand,
-			percentagePointsInC, rangemax, sigphi, sighit, lamshort,
-			maxAngleDiff, maxAnglePenalty);
+  ransac = new obvious::RandomNormalMatching(trials, epsThresh, sizeControlSet, zhit, zphi, zshort, zmax, zrand, percentagePointsInC, rangemax, sigphi, sighit, lamshort, maxAngleDiff, maxAnglePenalty);
 
-	ransac2 = new obvious::RandomNormalMatching(trials, epsThresh,
-			sizeControlSet, zhit, zphi, zshort, zmax, zrand,
-			percentagePointsInC, rangemax, sigphi, sighit, lamshort,
-			maxAngleDiff, maxAnglePenalty);
-
+  ransac2 = new obvious::RandomNormalMatching(trials, epsThresh, sizeControlSet, zhit, zphi, zshort, zmax, zrand, percentagePointsInC, rangemax, sigphi, sighit, lamshort, maxAngleDiff, maxAnglePenalty);
 
   /** Initialize member modules **/
-  _lastPose         = new obvious::Matrix(3, 3);
-  _rayCaster        = new obvious::RayCastPolar2D();
-  _assigner         = new obvious::FlannPairAssignment(2);
-  _filterDist       = new obvious::DistanceFilter(distFilterMax, distFilterMin, icpIterations - 10);
+  _lastPose = new obvious::Matrix(3, 3);
+  _rayCaster = new obvious::RayCastPolar2D();
+  _assigner = new obvious::FlannPairAssignment(2);
+  _filterDist = new obvious::DistanceFilter(distFilterMax, distFilterMin, icpIterations - 10);
   _filterReciprocal = new obvious::ReciprocalFilter();
-  _estimator        = new obvious::ClosedFormEstimator2D();
+  _estimator = new obvious::ClosedFormEstimator2D();
 
   //configure ICP
   _filterBounds = new obvious::OutOfBoundsFilter2D(grid->getMinX(), grid->getMaxX(), grid->getMinY(), grid->getMaxY());
@@ -160,32 +147,29 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
 
   _posePub = _nh->advertise<geometry_msgs::PoseStamped>(poseTopic, 1);
   _poseStamped.header.frame_id = tfBaseFrameId;
-  _tf.frame_id_                = tfBaseFrameId;
-  _tf.child_frame_id_          = _nameSpace + tfChildFrameId;
+  _tf.frame_id_ = tfBaseFrameId;
+  _tf.child_frame_id_ = _nameSpace + tfChildFrameId;
 
   _reverseScan = false;
 
-
-
 #ifdef TRACE
-	ransac->activateTrace();
-	ransac2->activateTrace();
+  ransac->activateTrace();
+  ransac2->activateTrace();
 #endif
 
 }
 
-ThreadLocalize::~ThreadLocalize() {
-	ROS_INFO_STREAM("Dekonstruktor ThreadLocalize");
+ThreadLocalize::~ThreadLocalize()
+{
+  ROS_INFO_STREAM("Dekonstruktor ThreadLocalize");
 
-	delete _sensor;
-	for (std::deque<sensor_msgs::LaserScan*>::iterator iter =
-			_laserData.begin(); iter < _laserData.end(); iter++)
-		delete *iter;
-	_stayActive = false;
-	_thread->join();
-	_laserData.clear();
+  delete _sensor;
+  for(std::deque<sensor_msgs::LaserScan*>::iterator iter = _laserData.begin(); iter < _laserData.end(); iter++)
+    delete *iter;
+  _stayActive = false;
+  _thread->join();
+  _laserData.clear();
 }
-
 
 void ThreadLocalize::laserCallBack(const sensor_msgs::LaserScan& scan)
 {
@@ -219,7 +203,7 @@ void ThreadLocalize::eventLoop(void)
 
     vector<float> ranges = _laserData.front()->ranges;
     if(_reverseScan)
-      std::reverse(ranges.begin(),ranges.end());
+      std::reverse(ranges.begin(), ranges.end());
 
     _sensor->setRealMeasurementData(ranges);
     _sensor->setStandardMask();
@@ -233,12 +217,12 @@ void ThreadLocalize::eventLoop(void)
 
     if(!_scene)   //first call, initialize buffers
     {
-      _scene        = new double[measurementSize * 2];
-      _maskS        = new bool[measurementSize];
-      _modelCoords  = new double[measurementSize * 2];
+      _scene = new double[measurementSize * 2];
+      _maskS = new bool[measurementSize];
+      _modelCoords = new double[measurementSize * 2];
       _modelNormals = new double[measurementSize * 2];
-      _maskM        = new bool[measurementSize];
-      *_lastPose    = _sensor->getTransformation();
+      _maskM = new bool[measurementSize];
+      *_lastPose = _sensor->getTransformation();
     }
 
     // reconstruction
@@ -292,7 +276,7 @@ void ThreadLocalize::eventLoop(void)
       ROS_ERROR_STREAM("Localizer(" << _nameSpace << ") registration error! \n");
       sendNanTransform();
     }
-    else //transformation valid -> transform sensor and publish new sensor pose
+    else  //transformation valid -> transform sensor and publish new sensor pose
     {
       _sensor->transform(&T);
       obvious::Matrix curPose = _sensor->getTransformation();
@@ -309,34 +293,32 @@ void ThreadLocalize::eventLoop(void)
 
 void ThreadLocalize::init(const sensor_msgs::LaserScan& scan)
 {
-  double localXoffset    = 0.0;
-  double localYoffset    = 0.0;
-  double localYawOffset  = 0.0;
+  double localXoffset = 0.0;
+  double localYoffset = 0.0;
+  double localYawOffset = 0.0;
   double maxRange = 0.0;
   double minRange = 0.0;
   double lowReflectivityRange = 0.0;
-  double footPrintWidth= 0.0;
-  double footPrintHeight= 0.0;
-  double footPrintXoffset= 0.0;
+  double footPrintWidth = 0.0;
+  double footPrintHeight = 0.0;
+  double footPrintXoffset = 0.0;
 
   ros::NodeHandle prvNh("~");
 
-  prvNh.param<double>(_nameSpace + "local_offset_x"        , localXoffset        , 0.0);
-  prvNh.param<double>(_nameSpace + "local_offset_y"        , localYoffset        , 0.0);
-  prvNh.param<double>(_nameSpace + "local_offset_yaw"      , localYawOffset      , 0.0);
-  prvNh.param<double>(_nameSpace + "max_range"             , maxRange            , 30.0);
-  prvNh.param<double>(_nameSpace + "min_range"             , minRange            , 0.001);
+  prvNh.param<double>(_nameSpace + "local_offset_x", localXoffset, 0.0);
+  prvNh.param<double>(_nameSpace + "local_offset_y", localYoffset, 0.0);
+  prvNh.param<double>(_nameSpace + "local_offset_yaw", localYawOffset, 0.0);
+  prvNh.param<double>(_nameSpace + "max_range", maxRange, 30.0);
+  prvNh.param<double>(_nameSpace + "min_range", minRange, 0.001);
   prvNh.param<double>(_nameSpace + "low_reflectivity_range", lowReflectivityRange, 2.0);
-  prvNh.param<double>(_nameSpace + "footprint_width"       , footPrintWidth      , 1.0);
-  prvNh.param<double>(_nameSpace + "footprint_height"      , footPrintHeight     , 1.0);
-  prvNh.param<double>(_nameSpace + "footprint_x_offset"    , footPrintXoffset    , 0.28);
+  prvNh.param<double>(_nameSpace + "footprint_width", footPrintWidth, 1.0);
+  prvNh.param<double>(_nameSpace + "footprint_height", footPrintHeight, 1.0);
+  prvNh.param<double>(_nameSpace + "footprint_x_offset", footPrintXoffset, 0.28);
 
-  const double phi    = localYawOffset;
+  const double phi = localYawOffset;
   const double startX = _gridWidth * 0.5 + _xOffset + localXoffset;
   const double startY = _gridWidth * 0.5 + _yOffset + localYoffset;
-  double tf[9]  = {std::cos(phi), -std::sin(phi), startX,
-      std::sin(phi),  std::cos(phi), startY,
-      0,              0,      1};
+  double tf[9] = {std::cos(phi), -std::sin(phi), startX, std::sin(phi), std::cos(phi), startY, 0, 0, 1};
   obvious::Matrix Tinit(3, 3);
   Tinit.setData(tf);
 
@@ -344,12 +326,12 @@ void ThreadLocalize::init(const sensor_msgs::LaserScan& scan)
   double angle_min = scan.angle_min;
   vector<float> ranges = scan.ranges;
 
-  if(scan.angle_increment<0.0 && scan.angle_min>0)
+  if(scan.angle_increment < 0.0 && scan.angle_min > 0)
   {
     _reverseScan = true;
     inc = -inc;
     angle_min = -angle_min;
-    std::reverse(ranges.begin(),ranges.end());
+    std::reverse(ranges.begin(), ranges.end());
   }
   _sensor = new obvious::SensorPolar2D(ranges.size(), inc, angle_min, maxRange, minRange, lowReflectivityRange);
   _sensor->setRealMeasurementData(ranges, 1.0);
@@ -365,15 +347,7 @@ void ThreadLocalize::init(const sensor_msgs::LaserScan& scan)
   this->unblock();
 }
 
-obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
-    obvious::Matrix* M,
-    obvious::Matrix* Mvalid,
-    obvious::Matrix* N,
-    obvious::Matrix* Nvalid,
-    obvious::Matrix* S,
-    obvious::Matrix* Svalid,
-    const bool experimental
-)
+obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor, obvious::Matrix* M, obvious::Matrix* Mvalid, obvious::Matrix* N, obvious::Matrix* Nvalid, obvious::Matrix* S, obvious::Matrix* Svalid, const bool experimental)
 {
 //  const unsigned int measurementSize = sensor->getRealMeasurementSize();
   obvious::Matrix T44(4, 4);
@@ -397,50 +371,81 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
 
     //if(factor == 1)
 
-	  // DONT FORGET NORMALS !!!!!!!!!!!!!!!!!
-    obvious::Matrix T = ransac2->match2(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
-    obvious::Matrix T2 = ransac->match(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
-    loopCounter ++;
+    obvious::Matrix T(3, 3);
+    obvious::Matrix T2(3, 3);
 
-    double diff = sqrt(pow(T(0,2) - T2(0,2),2) + pow(T(1,2) - T2(1,2),2));
+    if(_use_last_scan)
+    { // use last scan for registration?
+      if(_maskS_last == NULL) // first run?
+      {
+        T = ransac2->match2(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+        T2 = ransac->match(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+
+        _S_last = new obvious::Matrix(*S);
+
+        _maskS_last = (bool *)std::malloc(sizeof(_maskS) * sizeof(_maskS[1]));
+        std::copy(_maskS, _maskS + sizeof(_maskS), _maskS_last);
+      }
+      else
+      {
+        T = ransac2->match2(_S_last, _maskS_last, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+        T2 = ransac->match(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+
+        delete _S_last;
+        _S_last = new obvious::Matrix(*S);
+
+        std::free(_maskS_last);
+        _maskS_last = (bool*)std::malloc(sizeof(_maskS) * sizeof(_maskS[1]));
+        std::copy(_maskS, _maskS + sizeof(_maskS), _maskS_last);
+      }
+    }
+    else // dont use last scan
+    {
+      // DONT FORGET NORMALS !!!!!!!!!!!!!!!!!
+      T2 = ransac2->match2(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+      T = ransac->match(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+    }
+
+    loopCounter++;
+    double diff = sqrt(pow(T(0, 2) - T2(0, 2), 2) + pow(T(1, 2) - T2(1, 2), 2));
 
 #ifdef TRACE
-    if (diff > 0.3){
-    	ROS_INFO_STREAM("Diff: "<<diff);
-		long int a = ros::Time::now().toSec();
-		std::stringstream ss, ss2;
-		ss << "/tmp/trace/" << loopCounter << "_" << a << "_" << diff << "_match" << "/";
-		std::string filename = ss.str();
+    if(diff > 0.3)
+    {
+      ROS_INFO_STREAM("Diff: "<<diff);
+      long int a = ros::Time::now().toSec();
+      std::stringstream ss, ss2;
+      ss << "/tmp/trace/" << loopCounter << "_" << a << "_" << diff << "_match" << "/";
+      std::string filename = ss.str();
 
-		ransac->serializeTrace(filename.c_str());
+      ransac->serializeTrace(filename.c_str());
 
-		ss2 << "/tmp/trace/" << loopCounter << "_" << a << "_" << diff << "_match2" << "/";
-		filename = ss2.str();
+      ss2 << "/tmp/trace/" << loopCounter << "_" << a << "_" << diff << "_match2" << "/";
+      filename = ss2.str();
 
-		ransac2->serializeTrace(filename.c_str());
+      ransac2->serializeTrace(filename.c_str());
 
-		// write on file
+      // write on file
 
-		filename = filename + "rawData.dat";
-		ofstream file(filename.c_str());
+      filename = filename + "rawData.dat";
+      ofstream file(filename.c_str());
 
-		// mx my mm sx sy sm
-		for (unsigned int i = 0; i < M->getRows(); i++){
-			file << (*M)(i,0) << ";" << (*M)(i,1) << ";" << _maskM[i] << ";" << (*S)(i,0) << ";" << (*S)(i,1) << ";" << _maskS[i] << "\n";
-		}
+      // mx my mm sx sy sm
+      for(unsigned int i = 0; i < M->getRows(); i++)
+      {
+        file << (*M)(i, 0) << ";" << (*M)(i, 1) << ";" << _maskM[i] << ";" << (*S)(i, 0) << ";" << (*S)(i, 1) << ";" << _maskS[i] << "\n";
+      }
 
-		file.close();
+      file.close();
 
-		//~ write on file
+      //~ write on file
     }
 #endif
 
-
 //    ROS_INFO_STREAM("T; T2; diff \t||"
-//    		<< T(0,2) << " ; " << T(1,2) << " \t|| "
-//			<< T2(0,2) << " ; " << T2(1,2) << "\t|| "
-//			<< T(0,2) - T2(0,2) << " ; " << T(1,2) - T2(1,2));
-
+//        << T(0,2) << " ; " << T(1,2) << " \t|| "
+//      << T2(0,2) << " ; " << T2(1,2) << "\t|| "
+//      << T(0,2) - T2(0,2) << " ; " << T(1,2) - T2(1,2));
 
     //    else
     //    std::cout << __PRETTY_FUNCTION__ << " here?" << std::endl;
@@ -453,8 +458,8 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
     T44(1, 0) = T(1, 0);
     T44(1, 1) = T(1, 1);
     T44(1, 3) = T(1, 2);
-  }
 
+  }
 
   _icp->reset();
   obvious::Matrix P = sensor->getTransformation();
@@ -467,7 +472,6 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
   unsigned int it = 0;
   _icp->iterate(&rms, &pairs, &it, &T44);
   obvious::Matrix T = _icp->getFinalTransformation();
-
 
   return T;
 }
@@ -528,24 +532,24 @@ void ThreadLocalize::sendNanTransform()
 
 double ThreadLocalize::calcAngle(obvious::Matrix* T)
 {
-  double angle          = 0.0;
-  const double ARCSIN   = asin((*T)(1,0));
-  const double ARCSINEG = asin((*T)(0,1));
-  const double ARCOS    = acos((*T)(0,0));
+  double angle = 0.0;
+  const double ARCSIN = asin((*T)(1, 0));
+  const double ARCSINEG = asin((*T)(0, 1));
+  const double ARCOS = acos((*T)(0, 0));
   if((ARCSIN > 0.0) && (ARCSINEG < 0.0))
     angle = ARCOS;
   else if((ARCSIN < 0.0) && (ARCSINEG > 0.0))
     angle = 2.0 * M_PI - ARCOS;
-  return(angle);
+  return (angle);
 }
 
 bool ThreadLocalize::isPoseChangeSignificant(obvious::Matrix* lastPose, obvious::Matrix* curPose)
 {
-  const double deltaX   = (*curPose)(0, 2) - (*lastPose)(0, 2);
-  const double deltaY   = (*curPose)(1, 2) - (*lastPose)(1, 2);
-  double deltaPhi       = this->calcAngle(curPose) - this->calcAngle(lastPose);
-  deltaPhi              = fabs(sin(deltaPhi));
-  const double trnsAbs  = sqrt(deltaX * deltaX + deltaY * deltaY);
+  const double deltaX = (*curPose)(0, 2) - (*lastPose)(0, 2);
+  const double deltaY = (*curPose)(1, 2) - (*lastPose)(1, 2);
+  double deltaPhi = this->calcAngle(curPose) - this->calcAngle(lastPose);
+  deltaPhi = fabs(sin(deltaPhi));
+  const double trnsAbs = sqrt(deltaX * deltaX + deltaY * deltaY);
   return (deltaPhi > ROT_MIN) || (trnsAbs > TRNS_MIN);
 }
 
@@ -568,8 +572,7 @@ obvious::Matrix ThreadLocalize::maskMatrix(obvious::Matrix* Mat, bool* mask, uns
 }
 
 //toDo: maybe obsolete with pca matching, definitely not nice
-void ThreadLocalize::reduceResolution(bool* const maskIn, const obvious::Matrix* matIn, bool* const maskOut, obvious::Matrix* matOut,
-    const unsigned int pointsIn, const unsigned int pointsOut, const unsigned int reductionFactor)
+void ThreadLocalize::reduceResolution(bool* const maskIn, const obvious::Matrix* matIn, bool* const maskOut, obvious::Matrix* matOut, const unsigned int pointsIn, const unsigned int pointsOut, const unsigned int reductionFactor)
 {
   assert(pointsIn > pointsOut);
   //fixme we only support scan with even number of points like 1080. if a scan has 1081 points is not usable for subsampling here!
@@ -579,17 +582,18 @@ void ThreadLocalize::reduceResolution(bool* const maskIn, const obvious::Matrix*
   unsigned int cnt = 0;
   for(unsigned int i = 0; i < pointsIn; i++)
   {
-    if(!(i % factor)) // i % factor == 0
+    if(!(i % factor))  // i % factor == 0
     {
       cnt++;
-      if (maskIn[i]) {
-        maskOut[i/factor] = true;
-        (*matOut)(i/factor, 0) = (*matIn)(i, 0);
-        (*matOut)(i/factor, 1) = (*matIn)(i, 1);
+      if(maskIn[i])
+      {
+        maskOut[i / factor] = true;
+        (*matOut)(i / factor, 0) = (*matIn)(i, 0);
+        (*matOut)(i / factor, 1) = (*matIn)(i, 1);
       }
       else
       {
-        maskOut[i/factor] = false;
+        maskOut[i / factor] = false;
       }
     }
   }

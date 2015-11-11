@@ -15,6 +15,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_broadcaster.h>
 #include <cmath>
+#include <vector>
 
 #include "obvision/reconstruct/grid/SensorPolar2D.h"
 #include "obvision/reconstruct/grid/TsdGrid.h"
@@ -389,6 +390,12 @@ private:
    * Scan passed in clockwise rotation (mathematically negative increment)
    */
   bool _reverseScan;
+
+
+
+  obvious::Matrix* _S_last;
+  bool* _maskS_last;
+  bool _use_last_scan;
 
 };
 
