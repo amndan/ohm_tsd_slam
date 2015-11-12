@@ -405,7 +405,7 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor, o
       else
       {
         T = ransac2->match2(_S_last, _maskS_last, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
-        T2 = ransac->match(M, _maskM, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
+        T2 = ransac->match(_S_last, _maskS_last, NULL, S, _maskS, obvious::deg2rad(_ranPhiMax), _trnsMax, sensor->getAngularResolution());
 
         delete _S_last;
         _S_last = new obvious::Matrix(*S);
@@ -449,7 +449,14 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor, o
       // mx my mm sx sy sm
       for(unsigned int i = 0; i < M->getRows(); i++)
       {
-        file << (*M)(i, 0) << ";" << (*M)(i, 1) << ";" << _maskM[i] << ";" << (*S)(i, 0) << ";" << (*S)(i, 1) << ";" << _maskS[i] << "\n";
+        if(_use_last_scan)
+        {
+          file << (*_S_last)(i, 0) << ";" << (*_S_last)(i, 1) << ";" << _maskS_last[i] << ";" << (*S)(i, 0) << ";" << (*S)(i, 1) << ";" << _maskS[i] << "\n";
+        }
+        else
+        {
+          file << (*M)(i, 0) << ";" << (*M)(i, 1) << ";" << _maskM[i] << ";" << (*S)(i, 0) << ";" << (*S)(i, 1) << ";" << _maskS[i] << "\n";
+        }
       }
 
       file.close();
