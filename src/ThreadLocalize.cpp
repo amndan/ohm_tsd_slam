@@ -230,6 +230,8 @@ void ThreadLocalize::eventLoop(void)
 
     _dataMutex.lock();
 
+    _actualMeasurementStamp = _laserData.front()->header.stamp;
+
     vector<float> ranges = _laserData.front()->ranges;
     if(_reverseScan)
       std::reverse(ranges.begin(),ranges.end());
@@ -449,7 +451,7 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
   const double curTheta = this->calcAngle(T);
   const double posX = (*T)(0, 2) + _gridOffSetX;
   const double posY = (*T)(1, 2) + _gridOffSetY;
-  _poseStamped.header.stamp = ros::Time::now();
+  _poseStamped.header.stamp = _actualMeasurementStamp;
   _poseStamped.pose.position.x = posX;
   _poseStamped.pose.position.y = posY;
   _poseStamped.pose.position.z = 0.0;
@@ -460,7 +462,7 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
   _poseStamped.pose.orientation.y = quat.y();
   _poseStamped.pose.orientation.z = quat.z();
 
-  _tf.stamp_ = ros::Time::now();
+  _tf.stamp_ = _actualMeasurementStamp;
   _tf.setOrigin(tf::Vector3(posX, posY, 0.0));
   _tf.setRotation(quat);
 

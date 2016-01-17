@@ -398,6 +398,11 @@ private:
    * Scan passed in clockwise rotation (mathematically negative increment)
    */
   bool _reverseScan;
+
+  /**
+   * variable for the actual measurement time stamp
+   */
+  ros::Time _actualMeasurementStamp;
 };
 
 
