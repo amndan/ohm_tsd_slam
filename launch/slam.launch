@@ -19,7 +19,7 @@
 
          <!-- raycasting parameters -->
          <param name = "min_range"               type = "double" value = "0.0"   />    <!-- minimum range of raycaster in meters -->
-         <param name = "max_range"               type = "double" value = "20.0"  />    <!-- maximum range of raycaster in meters -->
+         <param name = "max_range"               type = "double" value = "60.0"  />    <!-- maximum range of raycaster in meters -->
          <param name = "low_reflectivity_range"  type = "double" value = "0.0"   />
          
             

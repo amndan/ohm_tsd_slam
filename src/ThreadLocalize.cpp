@@ -261,8 +261,8 @@ ThreadLocalize::~ThreadLocalize()
     {
       try
       {
-        _tfListener.waitForTransform("map", "wheelodom", ros::Time(0), ros::Duration(5.0));
-        _tfListener.lookupTransform("map", "wheelodom", ros::Time(0), _tfReader);
+        _tfListener.waitForTransform("map", "wheelodom", _actualMeasurementStamp, ros::Duration(5.0));
+        _tfListener.lookupTransform("map", "wheelodom", _actualMeasurementStamp, _tfReader);
       }
       catch(tf::TransformException ex)
       {
@@ -299,7 +299,7 @@ void ThreadLocalize::eventLoop(void)
 
     _dataMutex.lock();
 
-    _actualMeasurementStamp = _laserData.front()->header.stamp;
+    _actualMeasurementStamp = _laserData.front()->header.stamp; // todo: do i need a mutex here?
 
     vector<float> ranges = _laserData.front()->ranges;
     if(_reverseScan)
@@ -542,8 +542,29 @@ obvious::Matrix ThreadLocalize::doRegistration(obvious::SensorPolar2D* sensor,
   
   //std::cout << odomDiff << std::endl;
   
-  if(odomDiff > 0.05)
+  if(odomDiff > 0.3)
+  {
     ROS_WARN_STREAM("odom diff = " << odomDiff);
+//    T44(0, 0) = cos(theta);
+//    T44(0, 1) = sin(theta);
+//    T44(0, 3) = x;
+//    T44(1, 0) = -sin(theta);
+//    T44(1, 1) = cos(theta);
+//    T44(1, 3) = y;
+//
+//    _icp->reset();
+//    P = sensor->getTransformation();
+//    _filterBounds->setPose(&P);
+//
+//    _icp->setModel(Mvalid, Nvalid);
+//    _icp->setScene(Svalid);
+//    rms = 0.0;
+//    pairs = 0;
+//    it = 0;
+//    _icp->iterate(&rms, &pairs, &it, &T44);
+//    T = _icp->getFinalTransformation();
+  }
+
   //std::cout << "dff: " << x - x2 << "; " << y - y2 << "; " << theta - theta2 << std::endl;
 
   return T;
