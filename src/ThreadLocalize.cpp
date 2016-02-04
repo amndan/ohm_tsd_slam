@@ -339,20 +339,20 @@ void ThreadLocalize::odomRescueCheck(obvious::Matrix& T_slam)
 
   // diff
 
-//  obvious::Matrix T_diff = tfToObviouslyMatrix3x3(_tfRelativeOdom).getInverse() * T_laserOnBaseFootprint;
-//  double diffx = T_diff(0,2);
-//  double diffy = T_diff(1,2);
-//
-//  double difftrans = sqrt(pow(diffx,2) + pow(diffy,2));
-//  double diffrot = abs(asin(T_diff(0,1)));
+  obvious::Matrix T_diff = tfToObviouslyMatrix3x3(_tfRelativeOdom).getInverse() * T_laserOnBaseFootprint;
+  double diffx = T_diff(0,2);
+  double diffy = T_diff(1,2);
+
+  double difftrans = sqrt(pow(diffx,2) + pow(diffy,2));
+  double diffrot = abs(asin(T_diff(0,1)));
 
   // -----
 
   // use odom instead of slam if slam translation is impossible for robot
   if(dtrans > _grid.getCellSize() * 2.0)
   {
-    if(vrot > _rotVelocityMax || vtrans > _trnsVelocityMax)
-    //if(diffrot > _rotVelocityMax || difftrans > _trnsVelocityMax)
+    //if(vrot > _rotVelocityMax || vtrans > _trnsVelocityMax)
+    if(diffrot > _rotVelocityMax || difftrans > _trnsVelocityMax)
     {
       ROS_INFO("-----ODOM-RECOVER-----");
 //      obvious::Matrix relative_odom = tfToObviouslyMatrix3x3(_tfRelativeOdom);
