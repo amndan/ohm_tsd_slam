@@ -168,7 +168,7 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
     _PDFMatcher = new obvious::PDFMatching(trials, epsThresh, sizeControlSet, zhit, zphi, zshort, zmax, zrand, percentagePointsInC, rangemax, sigphi, sighit, lamshort, maxAngleDiff, maxAnglePenalty);
     break;
   case TSD:
-    _TSD_PDFMatcher = new obvious::TSD_PDFMatching(_grid, trials, epsThresh, sizeControlSet, zhit, zphi, zshort, zmax, zrand, percentagePointsInC, rangemax, sigphi, sighit, lamshort, maxAngleDiff, maxAnglePenalty);
+    _TSD_PDFMatcher = new obvious::TSD_PDFMatching(_grid, trials, epsThresh, sizeControlSet, zrand);
     break;
   default:
     ROS_ERROR_STREAM("Unknown registration mode " << _regMode << " use default = ICP" << std::endl);
@@ -298,8 +298,10 @@ void ThreadLocalize::odomRescueUpdate()
   // get new odom tf
   try
   {
-    _tfListener.waitForTransform(_tfBaseFrameId, _tfOdomFrameId, _laserStamp, _waitForOdomTf);
-    _tfListener.lookupTransform(_tfBaseFrameId, _tfOdomFrameId, _laserStamp, _tfReader);
+    _tfListener.waitForTransform(_tfBaseFrameId, _tfOdomFrameId, ros::Time(0), _waitForOdomTf);
+    _tfListener.lookupTransform(_tfBaseFrameId, _tfOdomFrameId, ros::Time(0), _tfReader);
+//    _tfListener.waitForTransform(_tfBaseFrameId, _tfOdomFrameId, _laserStamp, _waitForOdomTf);
+//    _tfListener.lookupTransform(_tfBaseFrameId, _tfOdomFrameId, _laserStamp, _tfReader);
   }
   catch(tf::TransformException ex)
   {
