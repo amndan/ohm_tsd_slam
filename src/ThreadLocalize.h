@@ -15,6 +15,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <ohm_tsd_slam/ohm_poseLaser_msgs.h>
 
 #include "obvision/reconstruct/grid/SensorPolar2D.h"
 #include "obvision/reconstruct/grid/TsdGrid.h"
@@ -92,6 +93,13 @@ public:
    * @param scan Laser data
    */
   void laserCallBack(const sensor_msgs::LaserScan& scan);
+
+  /**
+   * laserInclude
+   * Callback method for laser scan and pose message
+   * @param pose and scan Laser data
+   */
+  void laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWithScan);
 protected:
 
   /**

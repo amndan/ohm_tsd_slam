@@ -27,6 +27,7 @@ SlamNode::SlamNode(void)
   double xOffset = 0.0;
   double yOffset = 0.0;
   std::string topicLaser;
+  std::string topicAdditional;
   prvNh.param<int>("robot_nbr", iVar, 1);
   unsigned int robotNbr = static_cast<unsigned int>(iVar);
   prvNh.param<double>("x_off_factor", _xOffFactor, 0.5);
@@ -43,6 +44,7 @@ SlamNode::SlamNode(void)
   prvNh.param<double>("occ_grid_time_interval", gridPublishInterval, 2.0);
   prvNh.param<double>("loop_rate", loopRateVar, 40.0);
   prvNh.param<std::string>("laser_topic", topicLaser, "scan");
+  prvNh.param<std::string>("laser_topic_additional", topicAdditional, std::string("scanAdditional"));
 
   _loopRate = new ros::Rate(loopRateVar);
   _gridInterval = new ros::Duration(gridPublishInterval);
@@ -65,6 +67,7 @@ SlamNode::SlamNode(void)
 
   ThreadLocalize* threadLocalize = NULL;
   ros::Subscriber subs;
+  ros::Subscriber subsAdd;
   std::string nameSpace = "";
 
   //instanciate localization threads
@@ -72,6 +75,7 @@ SlamNode::SlamNode(void)
   {
     threadLocalize = new ThreadLocalize(_grid, _threadMapping, &_nh, nameSpace, xOffset, yOffset);
     subs = _nh.subscribe(topicLaser, 1, &ThreadLocalize::laserCallBack, threadLocalize);
+    subsAdd = _nh.subscribe(topicAdditional, 1, &ThreadLocalize::laserInclude, threadLocalize);
     _subsLaser.push_back(subs);
     _localizers.push_back(threadLocalize);
     ROS_INFO_STREAM("Single SLAM started" << std::endl);
@@ -87,6 +91,7 @@ SlamNode::SlamNode(void)
       prvNh.param(dummy, nameSpace, std::string("default_ns"));
       threadLocalize = new ThreadLocalize(_grid, _threadMapping, &_nh, nameSpace, xOffset, yOffset);
       subs = _nh.subscribe(nameSpace + "/" + topicLaser, 1, &ThreadLocalize::laserCallBack, threadLocalize);
+      //TODO: subsAdd to insert additional scan points is not implemented yet
       _subsLaser.push_back(subs);
       _localizers.push_back(threadLocalize);
       ROS_INFO_STREAM("started for thread for " << nameSpace << std::endl);
