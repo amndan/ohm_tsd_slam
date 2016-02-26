@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   tf
+  message_generation
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp -O2 -mtune=native -Wall")
@@ -51,8 +52,8 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
-#   Message1.msg
-#   Message2.msg
+#   ohm_maskLaser_msgs.msg
+#   ohm_poseLaser_msgs.msg
 # )
 
 ## Generate services in the 'srv' folder
@@ -70,10 +71,11 @@ find_package(Boost REQUIRED COMPONENTS system)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   sensor_msgs
-# )
+  generate_messages(
+    DEPENDENCIES
+    geometry_msgs
+	sensor_msgs
+  )
 
 ###################################
 ## catkin specific configuration ##
@@ -87,7 +89,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ohm_tsd_slam
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp sensor_msgs tf
+   CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
