@@ -256,6 +256,17 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
   Tr(2,2) = 1;
   T = Tr*R;
 
+//  double* data    = new double[poseWithScan.object.ranges.size()];
+//
+////  T.print();
+////  cout << endl;
+//  for(unsigned int i = 0; i < (poseWithScan.object.ranges.size()); i++)
+//  {
+//   data[i]         = poseWithScan.object.ranges[i];
+////   if(data[i]!= 0)
+////     cout << data[i] << "/";
+//  }
+////  cout << endl;
 
   tmpsensor->setRealMeasurementData(poseWithScan.object.ranges, 1.0);
   tmpsensor->setTransformation(T);
@@ -263,7 +274,7 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
   tmpsensor->maskZeroDepth();
   tmpsensor->maskInvalidDepth();
   tmpsensor->maskDepthDiscontinuity(obvious::deg2rad(3.0));
-  tmpsensor->_force = 1;
+  tmpsensor->_force = true;
   _mapper.queuePush(tmpsensor);
 
   this->unblock();

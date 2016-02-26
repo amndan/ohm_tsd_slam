@@ -77,6 +77,7 @@ SlamNode::SlamNode(void)
     subs = _nh.subscribe(topicLaser, 1, &ThreadLocalize::laserCallBack, threadLocalize);
     subsAdd = _nh.subscribe(topicAdditional, 1, &ThreadLocalize::laserInclude, threadLocalize);
     _subsLaser.push_back(subs);
+    _subsLaser.push_back(subsAdd);
     _localizers.push_back(threadLocalize);
     ROS_INFO_STREAM("Single SLAM started" << std::endl);
   }

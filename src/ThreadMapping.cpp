@@ -78,6 +78,7 @@ void ThreadMapping::queuePush(obvious::SensorPolar2D* sensor)
   sensorLocal->setTransformation(sensor->getTransformation());
   sensorLocal->setRealMeasurementData(sensor->getRealMeasurementData());
   sensorLocal->setStandardMask();
+  sensorLocal->_force = sensor->_force;
   _sensors.push_back(sensorLocal);
   _pushMutex.unlock();
   this->unblock();
