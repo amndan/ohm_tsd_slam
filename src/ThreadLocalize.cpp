@@ -240,21 +240,23 @@ void ThreadLocalize::laserCallBack(const sensor_msgs::LaserScan& scan)
 
 void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWithScan)
 {
-  obvious::SensorPolar2D* tmpsensor = new obvious::SensorPolar2D(poseWithScan.object.ranges.size(), poseWithScan.object.angle_increment, poseWithScan.object.angle_min, _sensor->getMaximumRange(), _sensor->getMinimumRange(), _sensor->getLowReflectivityRange());
+  obvious::SensorPolar2D* tmpsensor = new obvious::SensorPolar2D( // TODO: should do most of this just one times
+      poseWithScan.object.ranges.size(),
+      poseWithScan.object.angle_increment,
+      poseWithScan.object.angle_min,
+      _sensor->getMaximumRange(),
+      _sensor->getMinimumRange(),
+      _sensor->getLowReflectivityRange());
 
   /*
    * calculate the tranformation matrix
    */
-  obvious::Quaternion q(poseWithScan.pose.orientation.w, poseWithScan.pose.orientation.x, poseWithScan.pose.orientation.y, poseWithScan.pose.orientation.z);
-  obvious::Matrix R = q.Quaternion::convertToMatrix();
-  obvious::Matrix Tr(3,3);
-  obvious::Matrix T = tmpsensor->getTransformation();
-  Tr(0,0) = 1;
-  Tr(0,2) = poseWithScan.pose.position.x;
-  Tr(1,1) = 1;
-  Tr(1,2) = poseWithScan.pose.position.y;
-  Tr(2,2) = 1;
-  T = Tr*R;
+  tf::Transform tmp;
+  tf::poseMsgToTF(poseWithScan.pose, tmp);
+  obvious::Matrix T = tfToObviouslyMatrix3x3(tmp);
+
+  T(0,2) -= _gridOffSetX;
+  T(1,2) -= _gridOffSetY; // TODO: no angular offset available in ThreadLocalize; should do this with matix
 
 //  double* data    = new double[poseWithScan.object.ranges.size()];
 //
@@ -270,14 +272,10 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
 
   tmpsensor->setRealMeasurementData(poseWithScan.object.ranges, 1.0);
   tmpsensor->setTransformation(T);
-  tmpsensor->resetMask();
-  tmpsensor->maskZeroDepth();
-  tmpsensor->maskInvalidDepth();
-  tmpsensor->maskDepthDiscontinuity(obvious::deg2rad(3.0));
   tmpsensor->_force = true;
   _mapper.queuePush(tmpsensor);
 
-  this->unblock();
+  delete tmpsensor;
 }
 
 void ThreadLocalize::odomRescueInit()

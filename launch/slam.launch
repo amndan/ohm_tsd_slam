@@ -6,7 +6,7 @@
     <arg name="loop_rate" default="100.0" />
     <arg name="map_topic" default="map" />    <!-- topic of occupancy grid -->
     <arg name="pose_topic" default="pose" />    <!-- topic for robot's pose -->
-    <arg name="laser_topic" default="scan" />    <!-- topic to receive laser scan -->
+    <arg name="laser_topic" default="/ohm_md_prefilter/first" />    <!-- topic to receive laser scan -->
     <arg name="get_map_topic" default="map" />
 
     <arg name="x_offset" default="0.0" />
@@ -52,6 +52,8 @@
         <param name="pose_topic" type="string" value="$(arg pose_topic)" />    <!-- topic for robot's pose -->
         <param name="laser_topic" type="string" value="$(arg laser_topic)" />    <!-- topic to receive laser scan -->
         <param name="get_map_topic" type="string" value="$(arg get_map_topic)" />
+        <param name="laser_topic_additional" type="string" value="/ohm_md_postfilter/post_additional" />
+
 
         <!-- map parameters -->
         <param name="x_offset" type="double" value="$(arg x_offset)" />    <!-- offset of robot in map in meters -->
