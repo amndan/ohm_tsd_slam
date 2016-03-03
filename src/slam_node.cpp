@@ -6,7 +6,6 @@
  */
 
 #include "SlamNode.h"
-
 #include <ros/ros.h>
 
 #include "obcore/base/Logger.h"
@@ -20,4 +19,3 @@ int main(int argc, char** argv)
   ohm_tsd_slam::SlamNode slamNode;
   slamNode.start();
 }
-

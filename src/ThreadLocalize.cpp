@@ -21,6 +21,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <tf/tf.h>
+#include <cmath>
 //#include <ohm_tsd_slam/ohm_poseLaser_msgs.h>
 //#define TRACE
 
@@ -240,14 +241,20 @@ void ThreadLocalize::laserCallBack(const sensor_msgs::LaserScan& scan)
 
 void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWithScan)
 {
-  obvious::SensorPolar2D* tmpsensor = new obvious::SensorPolar2D( // TODO: should do most of this just one times
+  obvious::SensorPolar2D* tmpsensorIn = new obvious::SensorPolar2D(  // TODO: should do most of this just one times
       poseWithScan.object.ranges.size(),
       poseWithScan.object.angle_increment,
       poseWithScan.object.angle_min,
       _sensor->getMaximumRange(),
       _sensor->getMinimumRange(),
       _sensor->getLowReflectivityRange());
-
+  obvious::SensorPolar2D* tmpsensorOut = new obvious::SensorPolar2D( // TODO: should do most of this just one times
+      poseWithScan.object.ranges.size(),
+      poseWithScan.object.angle_increment,
+      poseWithScan.object.angle_min,
+      _sensor->getMaximumRange(),
+      _sensor->getMinimumRange(),
+      _sensor->getLowReflectivityRange());
   /*
    * calculate the tranformation matrix
    */
@@ -258,24 +265,53 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
   T(0,2) -= _gridOffSetX;
   T(1,2) -= _gridOffSetY; // TODO: no angular offset available in ThreadLocalize; should do this with matix
 
-//  double* data    = new double[poseWithScan.object.ranges.size()];
-//
+  double* dataIn    = new double[poseWithScan.object.ranges.size()];
+  double* dataOut    = new double[poseWithScan.object.ranges.size()];
+
 ////  T.print();
 ////  cout << endl;
-//  for(unsigned int i = 0; i < (poseWithScan.object.ranges.size()); i++)
-//  {
-//   data[i]         = poseWithScan.object.ranges[i];
-////   if(data[i]!= 0)
-////     cout << data[i] << "/";
-//  }
-////  cout << endl;
+  for(unsigned int i = 0; i < (poseWithScan.object.ranges.size()); i++)
+  {
+    /* Object type:
+    * 0: // scan
+    * 1: // mirror
+    * 2: // error_mirror
+    * 3: // transparent
+    * 4: // error_transparent
+    */
+    if((poseWithScan.object_mask[i] == 1) or (poseWithScan.object_mask[i] == 3))
+    {
+      dataIn[i]         = poseWithScan.object.ranges[i];
+      dataOut[i]        = INFINITY;
+    //  cout << poseWithScan.object.ranges[i] << "/";
+    }
+    else if(poseWithScan.object_mask[i] == 4)
+    {
+      dataIn[i]         = INFINITY;
+      dataOut[i]        = poseWithScan.object.ranges[i];
+    }
+    else
+    {
+      dataIn[i]         = INFINITY;
+      dataOut[i]        = INFINITY;
+    }
+//   if(data[i]!= 0)
+//     cout << data[i] << "/";
+  }
+  //cout << endl;
+  tmpsensorIn->setRealMeasurementData(dataIn, 1.0);
+  tmpsensorIn->setTransformation(T);
+//  tmpsensorOut->setRealMeasurementData(dataOut, 1.0);
+//  tmpsensorOut->setTransformation(T);
 
-  tmpsensor->setRealMeasurementData(poseWithScan.object.ranges, 1.0);
-  tmpsensor->setTransformation(T);
-  tmpsensor->_force = true;
-  _mapper.queuePush(tmpsensor);
+  tmpsensorIn->_force = 1;
+  _mapper.queuePush(tmpsensorIn);
 
-  delete tmpsensor;
+//  tmpsensorOut->_force = 2;
+//  _mapper.queuePush(tmpsensorOut);
+
+  delete tmpsensorIn;
+  delete tmpsensorOut;
 }
 
 void ThreadLocalize::odomRescueInit()

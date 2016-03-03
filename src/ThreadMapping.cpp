@@ -52,14 +52,19 @@ void ThreadMapping::eventLoop(void)
       _sensors.pop_back();
       _pushMutex.unlock();
 
-      if(sensor->_force)
+      if(sensor->_force == 1)
       {
-        _grid.pushForce(sensor);
+        _grid.pushForceIn(sensor);
+      }
+      else if(sensor->_force == 2)
+      {
+        _grid.pushForceDelete(sensor);
       }
       else
       {
         _grid.push(sensor);
       }
+
 
       _pushMutex.lock();
       //cout << "Queue size: " << _sensors.size() << endl;
