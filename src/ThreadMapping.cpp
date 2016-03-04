@@ -56,10 +56,6 @@ void ThreadMapping::eventLoop(void)
       {
         _grid.pushForceIn(sensor);
       }
-      else if(sensor->_force == 2)
-      {
-        _grid.pushForceDelete(sensor);
-      }
       else
       {
         _grid.push(sensor);
@@ -82,6 +78,7 @@ void ThreadMapping::queuePush(obvious::SensorPolar2D* sensor)
                                                                    sensor->getMaximumRange(), sensor->getMinimumRange(), sensor->getLowReflectivityRange());
   sensorLocal->setTransformation(sensor->getTransformation());
   sensorLocal->setRealMeasurementData(sensor->getRealMeasurementData());
+  sensorLocal->setRealMeasurementTypeID(sensor->getRealMeasurementTypeID());
   sensorLocal->setStandardMask();
   sensorLocal->_force = sensor->_force;
   _sensors.push_back(sensorLocal);

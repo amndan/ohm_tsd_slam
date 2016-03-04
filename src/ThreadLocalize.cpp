@@ -248,13 +248,7 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
       _sensor->getMaximumRange(),
       _sensor->getMinimumRange(),
       _sensor->getLowReflectivityRange());
-  obvious::SensorPolar2D* tmpsensorOut = new obvious::SensorPolar2D( // TODO: should do most of this just one times
-      poseWithScan.object.ranges.size(),
-      poseWithScan.object.angle_increment,
-      poseWithScan.object.angle_min,
-      _sensor->getMaximumRange(),
-      _sensor->getMinimumRange(),
-      _sensor->getLowReflectivityRange());
+
   /*
    * calculate the tranformation matrix
    */
@@ -266,10 +260,8 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
   T(1,2) -= _gridOffSetY; // TODO: no angular offset available in ThreadLocalize; should do this with matix
 
   double* dataIn    = new double[poseWithScan.object.ranges.size()];
-  double* dataOut    = new double[poseWithScan.object.ranges.size()];
+  int* typeID         = new int[poseWithScan.object.ranges.size()];
 
-////  T.print();
-////  cout << endl;
   for(unsigned int i = 0; i < (poseWithScan.object.ranges.size()); i++)
   {
     /* Object type:
@@ -279,39 +271,29 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
     * 3: // transparent
     * 4: // error_transparent
     */
-    if((poseWithScan.object_mask[i] == 1) or (poseWithScan.object_mask[i] == 3))
+    if(poseWithScan.object_mask[i] > 0)
     {
+      typeID[i]         = poseWithScan.object_mask[i];
       dataIn[i]         = poseWithScan.object.ranges[i];
-      dataOut[i]        = INFINITY;
-    //  cout << poseWithScan.object.ranges[i] << "/";
-    }
-    else if(poseWithScan.object_mask[i] == 4)
-    {
-      dataIn[i]         = INFINITY;
-      dataOut[i]        = poseWithScan.object.ranges[i];
     }
     else
     {
+      typeID[i]         = poseWithScan.object_mask[i];
       dataIn[i]         = INFINITY;
-      dataOut[i]        = INFINITY;
+
     }
-//   if(data[i]!= 0)
-//     cout << data[i] << "/";
   }
-  //cout << endl;
+
+  tmpsensorIn->setRealMeasurementTypeID(typeID);
   tmpsensorIn->setRealMeasurementData(dataIn, 1.0);
   tmpsensorIn->setTransformation(T);
-//  tmpsensorOut->setRealMeasurementData(dataOut, 1.0);
-//  tmpsensorOut->setTransformation(T);
 
-  tmpsensorIn->_force = 1;
+  tmpsensorIn->_force = true;
   _mapper.queuePush(tmpsensorIn);
 
-//  tmpsensorOut->_force = 2;
-//  _mapper.queuePush(tmpsensorOut);
-
   delete tmpsensorIn;
-  delete tmpsensorOut;
+  delete dataIn;
+  delete typeID;
 }
 
 void ThreadLocalize::odomRescueInit()
