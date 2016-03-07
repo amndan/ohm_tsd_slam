@@ -193,15 +193,14 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
 
 ThreadLocalize::~ThreadLocalize()
 {
-//  // (debug)print grid
-//  // todo: remove printing grid
-//  double ratio = double(_grid.getCellsX())/double(_grid.getCellsY());
-//  unsigned w = 600;
-//  unsigned h = (unsigned int)(((double)w)/ratio);
-//  unsigned char* image = new unsigned char[3 * w * h];
-//  _grid.grid2ColorImage(image, w, h);
-//  obvious::serializePPM("/tmp/image_tsd.ppm", image, w, h, true);
-
+  // (debug)print grid
+  // todo: remove printing grid
+  double ratio = double(_grid.getCellsX())/double(_grid.getCellsY());
+  unsigned w = 6000;
+  unsigned h = (unsigned int)(((double)w)/ratio);
+  unsigned char* image = new unsigned char[3 * w * h];
+  _grid.grid2ColorImage(image, w, h);
+  obvious::serializePPM("/tmp/image_tsd.ppm", image, w, h, true);
 
   delete _sensor;
   delete _RandomNormalMatcher;
@@ -280,7 +279,6 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
     {
       typeID[i]         = poseWithScan.object_mask[i];
       dataIn[i]         = INFINITY;
-
     }
   }
 
@@ -292,6 +290,7 @@ void ThreadLocalize::laserInclude(const ohm_tsd_slam::ohm_poseLaser_msgs& poseWi
   _mapper.queuePush(tmpsensorIn);
 
   delete tmpsensorIn;
+
   delete dataIn;
   delete typeID;
 }
@@ -345,7 +344,7 @@ void ThreadLocalize::odomRescueUpdate()
     ROS_ERROR("%s", ex.what());
     _odomTfIsValid = false;
   }
-  
+
   _tfOdom = _tfReader;
 
   // calc diff odom -> odom(t-1) -> odom(t)
