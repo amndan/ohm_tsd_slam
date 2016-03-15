@@ -50,11 +50,11 @@ find_package(Boost REQUIRED COMPONENTS system)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   ohm_maskLaser_msgs.msg
-#   ohm_poseLaser_msgs.msg
-# )
+ add_message_files(
+   FILES
+   ohm_maskLaser_msgs.msg
+   ohm_poseLaser_msgs.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(

@@ -20,10 +20,10 @@
     <arg name="min_range" default="0.0" />
     <arg name="max_range" default="30.0" />
 
-    <arg name="object_inflation_factor" default="1" />
+    <arg name="object_inflation_factor" default="0" />
 
-    <arg name="registration_mode" default="3" />
-    <arg name="icp_iterations" default="30" />
+    <arg name="registration_mode" default="0" />
+    <arg name="icp_iterations" default="80" />
 
     <arg name="reg_trs_max" default="1.0" />
     <arg name="reg_sin_rot_max" default="0.5" />
