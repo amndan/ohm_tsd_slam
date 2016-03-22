@@ -214,6 +214,7 @@ private:
    * @param T Transformation matrix to check and correct
    */
   void odomRescueCheck(obvious::Matrix& T);
+  void getPreTrafoFromOdom();
 
   /**
    * obviouslyMatrix3x3ToTf
@@ -445,6 +446,7 @@ private:
   tf::Transform _tfOdomOld;
   tf::Transform _tfOdom;
   tf::Transform _tfRelativeOdom;
+  obvious::Matrix _odomPreTrafo;
 
   /**
    * Transform from base footprint to laser
@@ -463,11 +465,13 @@ private:
    * use odom rescue flag
    */
   bool _useOdomRescue;
+  bool _useOdomPreTrafo;
 
   /**
    * state of the actual odom tf
    */
   bool _odomTfIsValid;
+  bool _odomPreTrafoWasSet;
 
   /**
    * time to wait for synced odom tf

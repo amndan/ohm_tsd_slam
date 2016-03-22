@@ -38,6 +38,8 @@
     <arg name="tf_footprint_frame" default="base_footprint" />
 
     <arg name="use_odom_rescue" default="false" />
+    <arg name="use_odom_pre_trafo" default="false" />
+    
     <arg name="max_velocity_rot" default="6.28" />
     <arg name="max_velocity_lin" default="1.0" />
     
@@ -79,13 +81,14 @@
         <!-- robot parameters -->
         <param name="footprint_width" type="double" value="1.0" />    <!-- width of robot in meters -->
         <param name="footprint_height" type="double" value="1.0" />    <!-- length of robot in meters -->
-        <param name="footprint_x_offset" type="double" value="0.0" />    <!-- offset of laser in meters -->
+        <param name="footprint_x_offset" type="double" value="0.6" />    <!-- offset of laser in meters -->
         <param name="max_velocity_rot" type="double" value="$(arg max_velocity_rot)" />    <!-- maximal rotational speed on base_footprint in rad/sec -->
         <param name="max_velocity_lin" type="double" value="$(arg max_velocity_lin)" />    <!-- maximal linear speed in m/s -->
 
         <!-- registration parameters -->
         <param name="registration_mode" type="int" value="$(arg registration_mode)" />    <!-- 0:ICP 1:EXPERIMENTAL 2:PDF 3:TSD_PDF -->
         <param name="use_odom_rescue" type="bool" value="$(arg use_odom_rescue)" />
+        <param name="use_odom_pre_trafo" type="bool" value="$(arg use_odom_pre_trafo)" />
 
         <!-- ICP parameters -->
         <param name="dist_filter_max" type="double" value="0.4" />    <!-- maximum distance for matching points -->

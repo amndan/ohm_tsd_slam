@@ -41,6 +41,7 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
                     _xOffset(xOffset),
                     _yOffset(yOffset),
                     _nameSpace(nameSpace),
+                    _odomPreTrafo(3,3),
                     _stampLaser(ros::Time::now())
 {
   ros::NodeHandle prvNh("~");
@@ -82,12 +83,14 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, ro
 
   // use odeom rescue?
   prvNh.param<bool>("use_odom_rescue", _useOdomRescue, false);
+  prvNh.param<bool>("use_odom_pre_trafo", _useOdomPreTrafo, false);
 
   // odom rescue
   double duration;
   prvNh.param<double>("wait_for_odom_tf", duration, 1.0);
   _waitForOdomTf = ros::Duration(duration);
   _odomTfIsValid = false;
+  _odomPreTrafoWasSet = false;
 
   //RandomMatcher options
   int trials;
@@ -221,7 +224,7 @@ void ThreadLocalize::laserCallBack(const sensor_msgs::LaserScan& scan)
     this->init(scan);
     ROS_INFO_STREAM("Localizer(" << _nameSpace << ") initialized -> running...\n");
 
-    if(_useOdomRescue) odomRescueInit();
+    if(_useOdomRescue || _useOdomPreTrafo) odomRescueInit();
 
     _stampLaserOld = scan.header.stamp;
   }
@@ -286,6 +289,7 @@ void ThreadLocalize::odomRescueUpdate()
   {
     ROS_ERROR("%s", ex.what());
     _odomTfIsValid = false;
+    return;
   }
   
   _tfOdom = _tfReader;
@@ -297,6 +301,13 @@ void ThreadLocalize::odomRescueUpdate()
   _tfOdomOld = _tfOdom;
 
   _odomTfIsValid = true;
+}
+
+void ThreadLocalize::getPreTrafoFromOdom()
+{
+  _odomPreTrafo = tfToObviouslyMatrix3x3(_tfLaser).getInverse() * tfToObviouslyMatrix3x3(_tfRelativeOdom) * tfToObviouslyMatrix3x3(_tfLaser);
+  _odomPreTrafoWasSet = true;
+  //TODO: save pre trafo as tf matrix --> less conversions
 }
 
 void ThreadLocalize::odomRescueCheck(obvious::Matrix& T_slam)
@@ -318,6 +329,8 @@ void ThreadLocalize::odomRescueCheck(obvious::Matrix& T_slam)
   double vrot = drot / dt;
   double vtrans = dtrans / dt;
 
+  ROS_INFO_STREAM("vt" << vtrans > _trnsVelocityMax);
+
   // use odom instead of slam if slam translation is impossible for robot
   if(dtrans > _grid.getCellSize() * 2.0)
   {
@@ -325,10 +338,18 @@ void ThreadLocalize::odomRescueCheck(obvious::Matrix& T_slam)
     {
       ROS_INFO("-----ODOM-RECOVER-----");
 
-      T_slam =
-        tfToObviouslyMatrix3x3(_tfLaser).getInverse() *
-        tfToObviouslyMatrix3x3(_tfRelativeOdom) *
-        tfToObviouslyMatrix3x3(_tfLaser);
+
+      if(_odomPreTrafoWasSet)
+      {
+        T_slam = _odomPreTrafo;
+      }
+      else
+      {
+        T_slam =
+          tfToObviouslyMatrix3x3(_tfLaser).getInverse() *
+          tfToObviouslyMatrix3x3(_tfRelativeOdom) *
+          tfToObviouslyMatrix3x3(_tfLaser);
+      }
     }
   }
 }
@@ -390,9 +411,6 @@ void ThreadLocalize::eventLoop(void)
     _laserData.clear();
     _dataMutex.unlock();
 
-    //odom rescue
-    if(_useOdomRescue) odomRescueUpdate();
-
     const unsigned int measurementSize = _sensor->getRealMeasurementSize();
 
     if(!_scene)   //first call, initialize buffers
@@ -403,6 +421,15 @@ void ThreadLocalize::eventLoop(void)
       _modelNormals = new double[measurementSize * 2];
       _maskM        = new bool[measurementSize];
       *_lastPose    = _sensor->getTransformation();
+    }
+
+    //odom rescue
+    if(_useOdomRescue || _useOdomPreTrafo) odomRescueUpdate();
+
+    if(_useOdomPreTrafo && _odomTfIsValid)
+    {
+      getPreTrafoFromOdom();
+      _sensor->transform(&_odomPreTrafo);
     }
 
     // reconstruction
@@ -431,6 +458,7 @@ void ThreadLocalize::eventLoop(void)
     obvious::Matrix T(3, 3);
 
     T = doRegistration(_sensor, &M, &Mvalid, &N, &Nvalid, &S, &Svalid);  //3x3 Transformation Matrix
+    _odomPreTrafoWasSet = false;
 
     /** analyze registration result */
     _tf.stamp_ = ros::Time::now();
