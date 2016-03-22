@@ -329,8 +329,6 @@ void ThreadLocalize::odomRescueCheck(obvious::Matrix& T_slam)
   double vrot = drot / dt;
   double vtrans = dtrans / dt;
 
-  ROS_INFO_STREAM("vt" << vtrans > _trnsVelocityMax);
-
   // use odom instead of slam if slam translation is impossible for robot
   if(dtrans > _grid.getCellSize() * 2.0)
   {
